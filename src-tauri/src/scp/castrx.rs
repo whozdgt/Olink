@@ -139,6 +139,26 @@ pub fn use_external_gtk() {
     EXTERNAL_GTK.store(true, std::sync::atomic::Ordering::SeqCst);
 }
 
+/// Update an open cast window's title after a language change. No-op until
+/// the app has put the cast window on Tauri's GTK loop.
+pub fn retitle_cast_window() {
+    if !EXTERNAL_GTK.load(std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+    let title = crate::i18n::t("cast.title", &[]);
+    glib::MainContext::default().invoke(move || {
+        use gtk::prelude::*;
+        CAST_WIN.with(|c| {
+            let c = c.borrow();
+            let Some((_, win)) = c.as_ref() else { return };
+            win.set_title(&title);
+            if let Some(bar) = win.titlebar().and_then(|w| w.downcast::<gtk::HeaderBar>().ok()) {
+                bar.set_title(Some(&title));
+            }
+        });
+    });
+}
+
 fn init_once() {
     static INIT: std::sync::Once = std::sync::Once::new();
     INIT.call_once(|| {
@@ -748,11 +768,12 @@ fn build_window(sink: &gst::Element, id: u64, out: tokio::sync::mpsc::UnboundedS
         .map_err(|_| anyhow::anyhow!("the video sink is not a GstNavigation"))?;
 
     let win = gtk::Window::new(gtk::WindowType::Toplevel);
-    win.set_title("Phone");
+    let title = crate::i18n::t("cast.title", &[]);
+    win.set_title(&title);
     // Our own title bar with a close button: the compositor didn't decorate
     // the plain window (no ×, so it couldn't be closed from the PC).
     let bar = gtk::HeaderBar::new();
-    bar.set_title(Some("Phone"));
+    bar.set_title(Some(&title));
     bar.set_show_close_button(true);
     win.set_titlebar(Some(&bar));
     win.set_default_size(440, 968);

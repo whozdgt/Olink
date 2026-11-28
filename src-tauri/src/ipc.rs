@@ -105,7 +105,7 @@ pub fn cli_request(cmd: &str, args: Value) -> Option<Result<Value, String>> {
     std::io::BufReader::new(s).read_line(&mut line).ok()?;
     let v: Value = serde_json::from_str(&line).ok()?;
     Some(match v.get("err") {
-        Some(e) => Err(e.as_str().unwrap_or("error").to_string()),
+        Some(e) => Err(e.as_str().unwrap_or(&crate::i18n::t("error.generic", &[])).to_string()),
         None => Ok(v["ok"].clone()),
     })
 }
@@ -160,14 +160,19 @@ async fn handle(cmd: &str, args: &Value) -> Result<Value, String> {
             let mut v = serde_json::to_value(crate::settings::get()).map_err(|e| e.to_string())?;
             // For the PC name field's placeholder (not a setting: ignored on save).
             v["computer_name"] = json!(crate::settings::computer_name());
+            // Resolved catalog (`en` / `zh-CN`) when `language` is `system`.
+            v["effective_language"] = json!(crate::i18n::effective_code());
             Ok(v)
         }
         "set_settings" => {
             // Typed: only the listed choices deserialize.
-            let settings: crate::settings::Settings = serde_json::from_value(args["settings"].clone()).map_err(|e| format!("Invalid settings: {e}"))?;
+            let settings: crate::settings::Settings = serde_json::from_value(args["settings"].clone())
+                .map_err(|e| crate::i18n::t("error.invalid_settings", &[("detail", &e.to_string())]))?;
             let start_on_login = settings.start_on_login;
-            crate::settings::set(settings).map_err(|e| format!("Couldn't save settings: {e}"))?;
-            crate::autostart::sync(start_on_login).map_err(|e| format!("Couldn't change start on login: {e}"))?;
+            crate::settings::set(settings).map_err(|e| crate::i18n::t("error.save_settings", &[("error", &e.to_string())]))?;
+            crate::desktop::refresh_tray();
+            crate::scp::castrx::retitle_cast_window();
+            crate::autostart::sync(start_on_login).map_err(|e| crate::i18n::t("error.autostart", &[("error", &e.to_string())]))?;
             Ok(Value::Null)
         }
         "answer_pairing" => {
@@ -191,7 +196,7 @@ async fn handle(cmd: &str, args: &Value) -> Result<Value, String> {
             crate::scp::pcsend::cancel(args["id"].as_str().unwrap_or_default()).map_err(s)?;
             Ok(Value::Null)
         }
-        other => Err(format!("unknown request {other:?}")),
+        other => Err(crate::i18n::t("error.unknown_request", &[("cmd", other)])),
     }
 }
 
@@ -240,7 +245,7 @@ pub async fn connect(
                 let waiter = CLIENT.get().and_then(|c| c.pending.lock().unwrap_or_else(|p| p.into_inner()).remove(&id));
                 if let Some(w) = waiter {
                     let r = match msg.get("err") {
-                        Some(e) => Err(e.as_str().unwrap_or("error").to_string()),
+                        Some(e) => Err(e.as_str().unwrap_or(&crate::i18n::t("error.generic", &[])).to_string()),
                         None => Ok(msg["ok"].clone()),
                     };
                     let _ = w.send(r);
@@ -254,10 +259,10 @@ pub async fn connect(
 
 /// Run a command in the background process.
 pub async fn call(cmd: &str, args: Value) -> Result<Value, String> {
-    let client = CLIENT.get().ok_or("Olink isn't running in the background.")?;
+    let client = CLIENT.get().ok_or_else(|| crate::i18n::t("error.not_background", &[]))?;
     let id = client.next.fetch_add(1, Ordering::SeqCst);
     let (tx, rx) = oneshot::channel();
     client.pending.lock().unwrap_or_else(|p| p.into_inner()).insert(id, tx);
-    client.tx.send(json!({ "id": id, "cmd": cmd, "args": args }).to_string()).map_err(|_| "Olink stopped.".to_string())?;
-    rx.await.map_err(|_| "Olink stopped.".to_string())?
+    client.tx.send(json!({ "id": id, "cmd": cmd, "args": args }).to_string()).map_err(|_| crate::i18n::t("error.stopped", &[]))?;
+    rx.await.map_err(|_| crate::i18n::t("error.stopped", &[]))?
 }

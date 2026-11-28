@@ -17,7 +17,13 @@ pub async fn get_settings() -> Result<Value, String> {
 /// (typed `settings::Settings`). Cast changes apply from the next cast.
 #[tauri::command]
 pub async fn set_settings(settings: Value) -> Result<(), String> {
-    call("set_settings", json!({ "settings": settings })).await.map(|_| ())
+    call("set_settings", json!({ "settings": settings })).await?;
+    // The background process saved them. Remember the language here too,
+    // so the next file dialog in this process uses it.
+    if let Ok(parsed) = serde_json::from_value::<crate::settings::Settings>(settings) {
+        crate::settings::adopt(parsed);
+    }
+    Ok(())
 }
 
 /// "Send files…" / "Send folder…": the desktop's own file picker (through
@@ -35,12 +41,15 @@ pub async fn pick_files_to_send(window: tauri::WebviewWindow, folders: Option<bo
             use std::cell::RefCell;
             use std::rc::Rc;
             let parent = w.gtk_window().ok();
+            let title = crate::i18n::t(if folders { "dialog.send_folders" } else { "dialog.send_files" }, &[]);
+            let accept = crate::i18n::t("dialog.send", &[]);
+            let cancel_label = crate::i18n::t("dialog.cancel", &[]);
             let dlg = gtk::FileChooserNative::new(
-                Some(if folders { "Send folders to phone" } else { "Send to phone" }),
+                Some(&title),
                 parent.as_ref(),
                 if folders { gtk::FileChooserAction::SelectFolder } else { gtk::FileChooserAction::Open },
-                Some("_Send"),
-                Some("_Cancel"),
+                Some(&accept),
+                Some(&cancel_label),
             );
             dlg.set_select_multiple(true);
             dlg.set_modal(true);
@@ -57,7 +66,7 @@ pub async fn pick_files_to_send(window: tauri::WebviewWindow, folders: Option<bo
             dlg.show();
         })
         .map_err(|e| e.to_string())?;
-    let paths = rx.await.map_err(|_| "The file picker closed.".to_string())?;
+    let paths = rx.await.map_err(|_| crate::i18n::t("dialog.picker_closed", &[]))?;
     if paths.is_empty() || !confirm_if_big(&window, &paths).await {
         return Ok(0); // cancelled
     }
@@ -76,11 +85,13 @@ async fn confirm_if_big(window: &tauri::WebviewWindow, paths: &[std::path::PathB
     if sum.bytes < BIG_BYTES && sum.files < BIG_FILES {
         return true;
     }
-    let title = format!("Send {} to your phone?", human_bytes(sum.bytes));
-    let mut detail = format!("That's {} file{}.", group(sum.files), if sum.files == 1 { "" } else { "s" });
+    let title = crate::i18n::t("dialog.big_title", &[("size", &human_bytes(sum.bytes))]);
+    let count = group(sum.files);
+    let detail_key = if sum.files == 1 { "dialog.big_one" } else { "dialog.big_other" };
+    let mut detail = crate::i18n::t(detail_key, &[("count", &count)]);
     if let Some((part, bytes)) = &sum.biggest {
         if *bytes * 2 > sum.bytes {
-            detail += &format!(" Most of it is in {part} ({}).", human_bytes(*bytes));
+            detail.push_str(&crate::i18n::t("dialog.big_part", &[("part", part), ("size", &human_bytes(*bytes))]));
         }
     }
     let (tx, rx) = tokio::sync::oneshot::channel::<bool>();
@@ -96,8 +107,8 @@ async fn confirm_if_big(window: &tauri::WebviewWindow, paths: &[std::path::PathB
             &title,
         );
         dlg.set_secondary_text(Some(&detail));
-        dlg.add_button("_Cancel", gtk::ResponseType::Cancel);
-        dlg.add_button("_Send", gtk::ResponseType::Accept);
+        dlg.add_button(&crate::i18n::t("dialog.cancel", &[]), gtk::ResponseType::Cancel);
+        dlg.add_button(&crate::i18n::t("dialog.send", &[]), gtk::ResponseType::Accept);
         dlg.set_default_response(gtk::ResponseType::Cancel);
         let tx = std::cell::RefCell::new(Some(tx));
         dlg.connect_response(move |d, resp| {
@@ -168,7 +179,13 @@ fn human_bytes(n: u64) -> String {
         v /= 1024.0;
         i += 1;
     }
-    if n < 1024 { format!("{n} bytes") } else if v < 10.0 { format!("{v:.1} {}", units[i]) } else { format!("{v:.0} {}", units[i]) }
+    if n < 1024 {
+        crate::i18n::t("dialog.bytes", &[("n", &n.to_string())])
+    } else if v < 10.0 {
+        format!("{v:.1} {}", units[i])
+    } else {
+        format!("{v:.0} {}", units[i])
+    }
 }
 
 /// 34976 → "34,976".
@@ -219,7 +236,10 @@ pub async fn answer_pairing(id: String, allow: bool) -> Result<(), String> {
 #[tauri::command]
 pub fn open_received_folder() -> Result<(), String> {
     let dir = crate::scp::icdf::download_dir();
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let open_err = |e: &dyn std::fmt::Display| {
+        crate::i18n::t("dialog.open_failed", &[("path", &dir.display().to_string()), ("error", &e.to_string())])
+    };
+    std::fs::create_dir_all(&dir).map_err(|e| open_err(&e))?;
     std::process::Command::new("xdg-open")
         .arg(&dir)
         .stdin(std::process::Stdio::null())
@@ -227,7 +247,7 @@ pub fn open_received_folder() -> Result<(), String> {
         .stderr(std::process::Stdio::null())
         .spawn()
         .map(|_| ())
-        .map_err(|e| format!("Couldn't open {}: {e}", dir.display()))
+        .map_err(|e| open_err(&e))
 }
 
 /// Diagnostics: lets the web UI report events/errors into the backend log.
@@ -260,7 +280,7 @@ mod tests {
     fn sizes_and_counts_read_well() {
         assert_eq!(human_bytes(26_053_412_044), "24 GB");
         assert_eq!(human_bytes(5 * 1024 * 1024 + 300_000), "5.3 MB");
-        assert_eq!(human_bytes(12), "12 bytes");
+        assert_eq!(human_bytes(12), crate::i18n::t("dialog.bytes", &[("n", "12")]));
         assert_eq!(group(34976), "34,976");
         assert_eq!(group(1_000_000), "1,000,000");
         assert_eq!(group(999), "999");

@@ -3,11 +3,15 @@
 // transfers, notifications, errors).
 //
 // Everything that comes from the phone (names, notification text, file
-// names) is shown with textContent, never as HTML. The only markup inserted
-// is the QR SVG, which our own backend generates.
+// names) is shown with textContent, never as HTML. Translated strings go
+// through textContent too. The only markup inserted is the QR SVG, which
+// our own backend generates, and <b> tags from the locale catalog, which
+// i18n.js builds as elements (see applyDom).
 //
 // In a plain browser (no Tauri) the page shows sample data when opened with
 // #demo, so the layout can be previewed.
+
+import { applyDom, t, useLocale } from "./i18n.js";
 
 const tauri = window.__TAURI__;
 const core = tauri?.core;
@@ -32,15 +36,37 @@ const el = (tag, cls, text) => {
   return e;
 };
 
+// The web view's locale, used only when the backend didn't resolve one
+// (#demo, or the settings call failed). Same rules as the Rust side.
+function browserLanguage() {
+  const tag = (navigator.language || "en").replace(/-/g, "_").toLowerCase().split(".")[0];
+  if (!tag || tag === "c" || tag === "posix") return "en";
+  if (tag === "zh" || tag.startsWith("zh_")) {
+    const parts = tag.split("_");
+    const traditional = parts.some((p) => p === "hant" || p === "tw" || p === "hk" || p === "mo");
+    const simplified = tag === "zh" || parts.some((p) => p === "hans" || p === "cn" || p === "sg" || p === "chs");
+    if (traditional && !simplified) return "en";
+    return "zh-CN";
+  }
+  return "en";
+}
+
+function resolveLang(s) {
+  const requested = s?.language || "system";
+  if (requested === "en" || requested === "zh-CN") return requested;
+  if (s?.effective_language === "en" || s?.effective_language === "zh-CN") return s.effective_language;
+  return browserLanguage();
+}
+
 // ---- Toast ------------------------------------------------------------
 
 function toast(msg, kind = "info") {
-  const t = $("toast");
-  t.textContent = msg;
-  t.className = `toast toast--${kind}`;
-  t.hidden = false;
+  const node = $("toast");
+  node.textContent = msg;
+  node.className = `toast toast--${kind}`;
+  node.hidden = false;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => (t.hidden = true), kind === "error" ? 7000 : 4000);
+  toast._t = setTimeout(() => (node.hidden = true), kind === "error" ? 7000 : 4000);
 }
 const errorText = (e) => String(e?.message ?? e).replace(/^Error:\s*/, "");
 const fail = (e) => toast(errorText(e), "error");
@@ -49,11 +75,16 @@ const fail = (e) => toast(errorText(e), "error");
 
 let connected = false;
 let casting = false;
+let peerLabel = "";
+let batteryState = null;
+let lastAddr = "";
+let computerName = "";
 
 function setConnected(on, peer) {
   connected = on;
-  $("conn").textContent = on ? "Connected" : "Not connected";
-  $("conn").title = on && peer ? `Phone at ${peer}` : "";
+  peerLabel = peer || "";
+  $("conn").textContent = on ? t("conn.on") : t("conn.off");
+  $("conn").title = on && peerLabel ? t("conn.peer", { peer: peerLabel }) : "";
   $("conn").className = `pill ${on ? "pill--on" : "pill--off"}`;
   $("pair-panel").hidden = on;
   $("screen-panel").hidden = !on;
@@ -65,10 +96,11 @@ function setConnected(on, peer) {
 }
 
 function setBattery(level, charging) {
+  batteryState = { level, charging };
   const b = $("battery");
   b.hidden = false;
-  b.textContent = `${level}%${charging ? " · charging" : ""}`;
-  b.title = "Phone battery";
+  b.textContent = t(charging ? "battery.charging" : "battery.level", { level });
+  b.title = t("battery.title");
   b.classList.toggle("chip--low", level <= 15 && !charging);
 }
 
@@ -94,7 +126,7 @@ const appName = (a) => a.name || guessName(a.pkg);
 function appTile(a) {
   const b = el("button", "tile");
   b.type = "button";
-  b.title = `Show ${appName(a)} (${a.pkg})`;
+  b.title = t("apps.show", { name: appName(a), pkg: a.pkg });
   b.disabled = casting;
   // Icons are data: URLs the backend checked and re-encoded (WebP/PNG/JPEG).
   if (a.icon && a.icon.startsWith("data:image/")) {
@@ -117,13 +149,13 @@ function renderApps() {
   const match = (a) => !q || appName(a).toLowerCase().includes(q) || a.pkg.toLowerCase().includes(q);
   box.replaceChildren();
   if (!apps.length) {
-    box.appendChild(el("p", "apps__empty", "Waiting for the phone's app list…"));
+    box.appendChild(el("p", "apps__empty", t("apps.waiting")));
     return;
   }
   const recent = apps.filter((a) => a.recent && match(a));
   const rest = apps.filter((a) => !a.recent && match(a));
   if (!recent.length && !rest.length) {
-    box.appendChild(el("p", "apps__empty", `No app matches “${$("app-search").value.trim()}”.`));
+    box.appendChild(el("p", "apps__empty", t("apps.none", { query: $("app-search").value.trim() })));
     return;
   }
   const group = (title, list) => {
@@ -133,14 +165,14 @@ function renderApps() {
     for (const a of list) grid.appendChild(appTile(a));
     box.appendChild(grid);
   };
-  group("Recent", recent);
-  group(recent.length ? "All apps" : "Apps", rest);
+  group(t("apps.recent"), recent);
+  group(t(recent.length ? "apps.all" : "apps.apps"), rest);
 }
 
 async function castApp(a) {
   try {
     await invoke("start_cast", { app: a.pkg });
-    toast(`Asking the phone to show ${appName(a)}…`);
+    toast(t("apps.asking", { name: appName(a) }));
   } catch (e) {
     fail(e);
   }
@@ -177,8 +209,8 @@ function fmtBytes(n) {
 // One row per transfer, updated in place as events arrive (keyed by id).
 const MAX_TRANSFERS = 12;
 const transferRows = new Map();
-function onTransfer(t) {
-  let row = transferRows.get(t.id);
+function onTransfer(transfer, opts = {}) {
+  let row = transferRows.get(transfer.id);
   if (!row) {
     const li = el("li", "transfer");
     const dir = el("span", "transfer__dir");
@@ -190,12 +222,12 @@ function onTransfer(t) {
     const fill = el("div", "transfer__fill");
     bar.appendChild(fill);
     body.append(name, state, bar);
-    const cancel = el("button", "btn btn--small transfer__cancel", "Cancel");
+    const cancel = el("button", "btn btn--small transfer__cancel", t("transfer.cancel"));
     cancel.type = "button";
     cancel.addEventListener("click", async () => {
       cancel.disabled = true;
       try {
-        await invoke("cancel_transfer", { id: t.id });
+        await invoke("cancel_transfer", { id: transfer.id });
       } catch (e) {
         fail(e);
         cancel.disabled = false;
@@ -203,7 +235,7 @@ function onTransfer(t) {
     });
     li.append(dir, body, cancel);
     row = { li, dir, name, state, bar, fill, cancel };
-    transferRows.set(t.id, row);
+    transferRows.set(transfer.id, row);
     const ul = $("transfers");
     ul.prepend(li);
     while (ul.children.length > MAX_TRANSFERS) {
@@ -212,26 +244,30 @@ function onTransfer(t) {
       last.remove();
     }
   }
-  const files = t.files || [];
-  row.dir.textContent = t.outgoing ? "↑" : "↓";
-  row.li.title = `${t.outgoing ? "To" : "From"} the phone:\n${files.join("\n")}`;
-  row.name.textContent = files.length > 1 ? `${files[0]} + ${files.length - 1} more` : files[0] || "Files";
-  const pct = t.bytes > 0 ? Math.min(100, Math.round((t.done / t.bytes) * 100)) : 0;
-  const size = fmtBytes(t.bytes);
-  row.state.textContent = {
-    waiting: `Waiting for you to accept on the phone · ${size}`,
-    sending: `Sending · ${pct}% of ${size}`,
-    receiving: `Receiving · ${pct}% of ${size}`,
-    done: t.outgoing ? `Sent · ${size}` : `Saved · ${size}`,
-    failed: t.outgoing ? "Not sent: cancelled, declined on the phone, or the connection dropped" : "Couldn't save all files",
-  }[t.state] || t.state;
-  row.li.dataset.state = t.state;
-  row.bar.hidden = !(t.state === "sending" || t.state === "receiving");
+  row.payload = transfer;
+  const files = transfer.files || [];
+  row.dir.textContent = transfer.outgoing ? "↑" : "↓";
+  row.li.title = t(transfer.outgoing ? "transfer.to" : "transfer.from", { files: files.join("\n") });
+  row.name.textContent = files.length > 1 ? t("transfer.more", { name: files[0], count: files.length - 1 }) : files[0] || t("transfer.files");
+  const pct = transfer.bytes > 0 ? Math.min(100, Math.round((transfer.done / transfer.bytes) * 100)) : 0;
+  const size = fmtBytes(transfer.bytes);
+  const stateText = {
+    waiting: t("transfer.waiting", { size }),
+    sending: t("transfer.sending", { pct, size }),
+    receiving: t("transfer.receiving", { pct, size }),
+    done: t(transfer.outgoing ? "transfer.sent" : "transfer.saved", { size }),
+    failed: t(transfer.outgoing ? "transfer.not_sent" : "transfer.not_saved"),
+  }[transfer.state] || transfer.state;
+  row.state.textContent = stateText;
+  row.cancel.textContent = t("transfer.cancel");
+  row.li.dataset.state = transfer.state;
+  row.bar.hidden = !(transfer.state === "sending" || transfer.state === "receiving");
   // Transfers to the phone can be stopped from here (the phone can stop any).
-  row.cancel.hidden = !(t.outgoing && (t.state === "waiting" || t.state === "sending"));
+  row.cancel.hidden = !(transfer.outgoing && (transfer.state === "waiting" || transfer.state === "sending"));
   row.fill.style.width = `${pct}%`;
-  if (t.state === "done") toast(t.outgoing ? "Sent to the phone" : "Received from the phone");
-  if (t.state === "failed") toast(row.state.textContent, "error");
+  if (opts.quiet) return;
+  if (transfer.state === "done") toast(t(transfer.outgoing ? "transfer.toast_sent" : "transfer.toast_received"));
+  if (transfer.state === "failed") toast(stateText, "error");
 }
 
 // ---- Events ------------------------------------------------------------------
@@ -241,15 +277,16 @@ function onEvent(ev) {
     case "qr":
       // SVG generated by our own backend (qrcode crate), not by the phone.
       $("qr").innerHTML = ev.svg;
-      $("addr").textContent = `This computer: ${ev.addr}`;
+      lastAddr = ev.addr || "";
+      $("addr").textContent = t("pair.addr", { addr: lastAddr });
       break;
     case "connected":
       setConnected(true, ev.peer);
-      toast("Phone connected");
+      toast(t("toast.connected"));
       break;
     case "disconnected":
       setConnected(false);
-      toast("Phone disconnected");
+      toast(t("toast.disconnected"));
       break;
     case "battery":
       setBattery(ev.level, ev.charging);
@@ -279,7 +316,7 @@ function onEvent(ev) {
       break;
     case "pair_request_done":
       if (pairAsk && pairAsk.id === ev.id) closePairAsk();
-      if (!ev.allowed) toast("Pairing not allowed");
+      if (!ev.allowed) toast(t("pair.ask.denied"));
       break;
   }
 }
@@ -292,12 +329,21 @@ let pairAsk = null;
 
 function askPairing({ id, name, model, addr }) {
   closePairAsk();
-  $("pair-ask-name").textContent = name || "Unknown phone";
-  $("pair-ask-meta").textContent = [model && `Model ${model}`, addr && `at ${addr}`].filter(Boolean).join(" · ");
   let left = 20;
-  const tick = () => ($("pair-ask-timer").textContent = `This request expires in ${left} s.`);
-  tick();
-  pairAsk = { id, timer: setInterval(() => { left = Math.max(0, left - 1); tick(); }, 1000) };
+  const render = () => {
+    $("pair-ask-name").textContent = name || t("pair.ask.unknown");
+    const parts = [];
+    if (model) parts.push(t("pair.ask.model", { model }));
+    if (addr) parts.push(t("pair.ask.at", { addr }));
+    $("pair-ask-meta").textContent = parts.join(" · ");
+    $("pair-ask-timer").textContent = t("pair.ask.timer", { seconds: left });
+  };
+  render();
+  pairAsk = {
+    id,
+    render,
+    timer: setInterval(() => { left = Math.max(0, left - 1); render(); }, 1000),
+  };
   $("pair-ask").showModal();
   $("pair-deny").focus(); // the safe choice is the default
 }
@@ -315,7 +361,7 @@ async function answerPairing(allow) {
   closePairAsk();
   try {
     await invoke("answer_pairing", { id, allow });
-    if (allow) toast("Allowed. Finishing the connection…");
+    if (allow) toast(t("pair.ask.allowed"));
   } catch (e) {
     fail(e);
   }
@@ -334,7 +380,7 @@ $("pair-ask").addEventListener("cancel", (e) => {
 $("cast").addEventListener("click", async () => {
   try {
     await invoke("start_cast", { app: null });
-    toast("Asking the phone to share its screen…");
+    toast(t("screen.asking"));
   } catch (e) {
     fail(e);
   }
@@ -380,6 +426,7 @@ function readSettingsForm() {
     start_on_login: f.start_on_login.checked,
     theme: f.theme.value || "system",
     pc_name: f.pc_name.value.trim(),
+    language: f.language.value || "system",
   };
 }
 
@@ -392,7 +439,9 @@ function fillSettingsForm(s) {
   f.start_on_login.checked = !!s.start_on_login;
   f.theme.value = s.theme || "system";
   f.pc_name.value = s.pc_name || "";
-  f.pc_name.placeholder = s.computer_name || "";
+  f.language.value = s.language || "system";
+  computerName = s.computer_name || "";
+  f.pc_name.placeholder = computerName;
 }
 
 $("open-settings").addEventListener("click", async () => {
@@ -416,14 +465,44 @@ function applyTheme(theme) {
   }
 }
 
+async function applyLanguage(s) {
+  await useLocale(resolveLang(s));
+  refreshDynamic();
+}
+
 settingsForm.addEventListener("change", async () => {
-  applyTheme(readSettingsForm().theme);
+  const form = readSettingsForm();
+  applyTheme(form.theme);
   try {
-    await invoke("set_settings", { settings: readSettingsForm() });
+    await invoke("set_settings", { settings: form });
+    const fresh = await invoke("get_settings");
+    if (fresh) await applyLanguage(fresh);
   } catch (e) {
     fail(e);
   }
 });
+
+function renderDrop() {
+  $("drop-title").textContent = connected ? t("drop.title") : t("drop.need_title");
+  $("drop-sub").textContent = connected ? t("drop.sub") : t("drop.need_sub");
+  $("drop").classList.toggle("drop--off", !connected);
+}
+
+// Static catalog text, then anything built in JS (so a language change
+// updates the open window, including rows already on screen).
+function refreshDynamic() {
+  applyDom();
+  setConnected(connected, peerLabel);
+  if (batteryState) setBattery(batteryState.level, batteryState.charging);
+  renderApps();
+  for (const row of transferRows.values()) {
+    if (row.payload) onTransfer(row.payload, { quiet: true });
+  }
+  if (lastAddr) $("addr").textContent = t("pair.addr", { addr: lastAddr });
+  if (pairAsk) pairAsk.render();
+  if ($("pc-name")) $("pc-name").placeholder = computerName;
+  renderDrop();
+}
 
 // ---- Drag and drop ---------------------------------------------------------------------
 
@@ -435,9 +514,7 @@ function setupDrop() {
   wv.onDragDropEvent((e) => {
     const type = e.payload.type;
     if (type === "enter") {
-      $("drop-title").textContent = connected ? "Drop to send to your phone" : "Connect your phone first";
-      $("drop-sub").textContent = connected ? "The phone asks you to accept." : "Then drop the files again.";
-      $("drop").classList.toggle("drop--off", !connected);
+      renderDrop();
       $("drop").hidden = false;
     } else if (type === "leave" || type === "drop") {
       $("drop").hidden = true;
@@ -447,10 +524,27 @@ function setupDrop() {
 
 // ---- Demo (browser preview only) ---------------------------------------------------------
 
-let demoSettings = { cast_quality: "balanced", scroll_mode: "swipe", desktop_notifications: true, share_clipboard: true, start_on_login: true, theme: "system", pc_name: "", computer_name: "my-computer" };
+let demoSettings = {
+  cast_quality: "balanced",
+  scroll_mode: "swipe",
+  desktop_notifications: true,
+  share_clipboard: true,
+  start_on_login: true,
+  theme: "system",
+  pc_name: "",
+  language: "system",
+  computer_name: "my-computer",
+};
 function demo(cmd, args) {
-  if (cmd === "get_settings") return demoSettings;
-  if (cmd === "set_settings") { demoSettings = args.settings; return null; }
+  if (cmd === "get_settings") {
+    const language = demoSettings.language || "system";
+    const effective_language = language === "en" || language === "zh-CN" ? language : browserLanguage();
+    return { ...demoSettings, language, effective_language };
+  }
+  if (cmd === "set_settings") {
+    demoSettings = { ...demoSettings, ...args.settings };
+    return null;
+  }
   if (cmd === "phone_state") {
     if (!DEMO) return [];
     const app = (pkg, name, recent = false) => ({ pkg, name, icon: "", recent });
@@ -470,13 +564,26 @@ function demo(cmd, args) {
     ];
   }
   if (cmd === "start_cast" || cmd === "pick_files_to_send" || cmd === "open_received_folder") {
-    throw new Error("Open this inside the app to use the phone.");
+    throw new Error(t("demo.need_app"));
   }
   return null;
 }
 
 (async function init() {
-  invoke("get_settings").then((s) => s && applyTheme(s.theme)).catch(() => {});
+  let settings = null;
+  try {
+    settings = await invoke("get_settings");
+  } catch (_) {}
+  if (settings) {
+    applyTheme(settings.theme);
+    computerName = settings.computer_name || "";
+  }
+  try {
+    await useLocale(resolveLang(settings));
+  } catch (e) {
+    uiLog(`i18n: ${e}`);
+  }
+  refreshDynamic();
   setupDrop();
   if (tauri?.event) {
     await tauri.event.listen("phone", (e) => onEvent(e.payload));

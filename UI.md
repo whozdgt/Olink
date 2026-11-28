@@ -5,8 +5,10 @@ framework, no build step, no bundler: what's in `src/` is what runs.
 
 | File | What it is |
 |---|---|
-| `src/index.html` | The page: header, pairing panel (QR), phone screen panel with the app grid, files panel, notifications, settings dialog, pairing dialog, drop overlay, toast |
-| `src/main.js` | All behaviour (ES module, ~470 lines) |
+| `src/index.html` | The page: header, pairing panel (QR), phone screen panel with the app grid, files panel, notifications, settings dialog, pairing dialog, drop overlay, toast. Static text is marked with `data-i18n` |
+| `src/main.js` | All behaviour (ES module) |
+| `src/i18n.js` | Loads `src/locales/<lang>.json` and fills the page. `t(key, vars)` for text built in script |
+| `src/locales/` | i18next JSON catalogs (`en`, `zh-CN`). The Rust backend embeds the same files. See `src/locales/README.md` |
 | `src/styles.css` | All styling, in the design language of [Streamline](https://github.com/whozdgt/streamline): CSS variables on `:root` are the dark **Midnight** theme, and `prefers-color-scheme: light` swaps in **Classic** |
 | `src/assets/` | The icon: `olink.svg` (Midnight) and `olink-classic.svg` (Classic); the header's `<picture>` picks one with the theme |
 | `src/fonts/` | Optional Inter font (falls back to the system UI font) |
@@ -14,7 +16,9 @@ framework, no build step, no bundler: what's in `src/` is what runs.
 Preview it in any browser without the app: serve `src/` (for example
 `python3 -m http.server -d src`) and open `index.html#demo`, which fills the
 page with sample data (connected phone, apps, transfers, a notification).
-Without `#demo` it shows the "Connect your phone" state.
+Without `#demo` it shows the "Connect your phone" state. In the browser,
+Follow system uses the browser's language; in the app it uses the locale
+the backend resolved.
 
 ## Rules the page must keep
 
@@ -27,7 +31,12 @@ Without `#demo` it shows the "Connect your phone" state.
   names, file names and the phone's name come from the phone (and partly
   from anyone who can message the phone). Use `textContent` / the `el()`
   helper, never `innerHTML`. The only `innerHTML` is the QR SVG, which the
-  app generates itself.
+  app generates itself. Translated strings follow the same rule: `t()`
+  returns text. A catalog string may contain `<b>…</b>` only; `i18n.js`
+  turns that into an element and puts the words in with `textContent`.
+- **Language.** Settings → Language is Follow system, English, or 简体中文.
+  The page sets `<html lang>` to the catalog in use (`en` or `zh-CN`).
+  Adding a language is described in `src/locales/README.md`.
 - **The page never handles file paths.** "Send files…" and drag and drop
   are done by the app's Rust side; the page only asks for the picker.
 - Keep the element ids that `main.js` looks up (or change both together).
@@ -44,7 +53,7 @@ Without `#demo` it shows the "Connect your phone" state.
 | `pick_files_to_send` | `{ folders: bool }` | Open the file / folder picker and send what's picked |
 | `cancel_transfer` | `{ id }` | Stop a transfer to the phone |
 | `open_received_folder` | – | Open `~/Downloads/Olink` |
-| `get_settings` / `set_settings` | `{ settings }` | `cast_quality` (`smooth`/`balanced`/`sharp`), `scroll_mode` (`swipe`/`scroll`), `desktop_notifications`, `share_clipboard`, `start_on_login` (booleans), `theme` (`system`/`midnight`/`classic`), `pc_name` (text, ≤ 40 characters, no control characters; empty = the computer's name). `get_settings` also returns `computer_name` for the field's placeholder |
+| `get_settings` / `set_settings` | `{ settings }` | `cast_quality` (`smooth`/`balanced`/`sharp`), `scroll_mode` (`swipe`/`scroll`), `desktop_notifications`, `share_clipboard`, `start_on_login` (booleans), `theme` (`system`/`midnight`/`classic`), `language` (`system`/`en`/`zh-CN`), `pc_name` (text, ≤ 40 characters, no control characters; empty = the computer's name). `get_settings` also returns `computer_name` (the name field's placeholder) and `effective_language` (`en` or `zh-CN`, after resolving `system`) |
 | `answer_pairing` | `{ id, allow }` | Answer "Allow this phone to connect?" |
 | `ui_log` | `{ msg }` | Write a line to the app's log |
 

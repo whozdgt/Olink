@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Olink</title>
+    <title data-i18n="app.title">Olink</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -16,13 +16,13 @@
           </picture>
           <div>
             <h1 class="brand__title">Olink</h1>
-            <p class="brand__sub">Your phone on Linux</p>
+            <p class="brand__sub" data-i18n="app.tagline">Your phone on Linux</p>
           </div>
         </div>
         <div class="header__right">
           <span id="battery" class="chip" hidden></span>
-          <span id="conn" class="pill pill--off">Not connected</span>
-          <button id="open-settings" class="icon-btn" title="Settings" aria-label="Settings">
+          <span id="conn" class="pill pill--off" data-i18n="conn.off">Not connected</span>
+          <button id="open-settings" class="icon-btn" data-i18n-title="settings.open" data-i18n-aria-label="settings.open" title="Settings" aria-label="Settings">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
               <path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L14.9 3h-4l-.4 2.9a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.4 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.4 2.9h4l.4-2.9a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5L19.4 13ZM12.9 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/>
             </svg>
@@ -34,18 +34,18 @@
 
       <!-- Not connected: pairing -->
       <section class="panel" id="pair-panel">
-        <h2 class="panel__title">Connect your phone</h2>
+        <h2 class="panel__title" data-i18n="pair.title">Connect your phone</h2>
         <div class="pair">
-          <div id="qr" class="pair__qr" aria-label="Pairing QR code">
-            <span class="pair__wait">Starting…</span>
+          <div id="qr" class="pair__qr" data-i18n-aria-label="pair.qr" aria-label="Pairing QR code">
+            <span class="pair__wait" data-i18n="pair.starting">Starting…</span>
           </div>
           <div class="pair__text">
             <ol class="pair__steps">
-              <li>Put the phone on the same Wi-Fi as this computer.</li>
-              <li>On the phone, open <b>Settings → Device connect → PC</b> and choose to scan a QR code.</li>
-              <li>Scan this code.</li>
+              <li data-i18n="pair.step1">Put the phone on the same Wi-Fi as this computer.</li>
+              <li data-i18n-b="pair.step2">On the phone, open <b>Settings → Device connect → PC</b> and choose to scan a QR code.</li>
+              <li data-i18n="pair.step3">Scan this code.</li>
             </ol>
-            <p class="panel__hint pair__again">
+            <p class="panel__hint pair__again" data-i18n-b="pair.again">
               Connected before? Tap this PC in <b>Settings → Device connect → PC</b> on the phone, no QR needed.
             </p>
             <p class="panel__hint" id="addr"></p>
@@ -57,28 +57,28 @@
       <section class="panel" id="screen-panel" hidden>
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">Phone screen</h2>
-            <p class="panel__hint">Show the phone in a window here and use it with your mouse and keyboard.</p>
+            <h2 class="panel__title" data-i18n="screen.title">Phone screen</h2>
+            <p class="panel__hint" data-i18n="screen.hint">Show the phone in a window here and use it with your mouse and keyboard.</p>
           </div>
           <div class="panel__actions">
-            <span id="casting" class="pill pill--on" hidden>Showing</span>
-            <button id="cast" class="btn btn--primary">Show phone screen</button>
+            <span id="casting" class="pill pill--on" data-i18n="screen.showing" hidden>Showing</span>
+            <button id="cast" class="btn btn--primary" data-i18n="screen.cast">Show phone screen</button>
           </div>
         </div>
 
         <div class="apps">
           <div class="apps__head">
             <div>
-              <div class="apps__title">Or show one app</div>
-              <div class="panel__hint">It opens in its own window, and the phone stays free to use.</div>
+              <div class="apps__title" data-i18n="apps.title">Or show one app</div>
+              <div class="panel__hint" data-i18n="apps.hint">It opens in its own window, and the phone stays free to use.</div>
             </div>
-            <input id="app-search" class="search" type="search" placeholder="Search apps" aria-label="Search apps" autocomplete="off" spellcheck="false" />
+            <input id="app-search" class="search" type="search" data-i18n-placeholder="apps.search" data-i18n-aria-label="apps.search" placeholder="Search apps" aria-label="Search apps" autocomplete="off" spellcheck="false" />
           </div>
           <div id="apps" class="apps__list" aria-live="polite">
-            <p class="apps__empty">Waiting for the phone's app list…</p>
+            <p class="apps__empty" data-i18n="apps.waiting">Waiting for the phone's app list…</p>
           </div>
         </div>
-        <p class="panel__hint panel__hint--last">
+        <p class="panel__hint panel__hint--last" data-i18n-b="screen.footer">
           You can also start it on the phone: <b>Settings → Device connect → PC → Screencast</b>. Close the window to stop.
         </p>
       </section>
@@ -86,91 +86,98 @@
       <section class="panel" id="files-panel" hidden>
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">Files</h2>
-            <p class="panel__hint">
+            <h2 class="panel__title" data-i18n="files.title">Files</h2>
+            <p class="panel__hint" data-i18n-b="files.hint">
               Drop files or folders anywhere on this window to send them. Files shared from the phone are saved in
               <b>Downloads/Olink</b>.
             </p>
           </div>
           <div class="panel__actions">
-            <button id="open-received" class="btn">Open received</button>
-            <button id="send-folder" class="btn">Send folder…</button>
-            <button id="send-files" class="btn btn--primary">Send files…</button>
+            <button id="open-received" class="btn" data-i18n="files.open">Open received</button>
+            <button id="send-folder" class="btn" data-i18n="files.folder">Send folder…</button>
+            <button id="send-files" class="btn btn--primary" data-i18n="files.send">Send files…</button>
           </div>
         </div>
         <ul id="transfers" class="transfers"></ul>
       </section>
 
       <section class="panel" id="notif-panel" hidden>
-        <h2 class="panel__title">Recent notifications</h2>
+        <h2 class="panel__title" data-i18n="notif.title">Recent notifications</h2>
         <ul id="notifs" class="notifs"></ul>
       </section>
     </main>
 
     <dialog id="settings" class="dialog" aria-labelledby="settings-title">
       <form method="dialog" class="dialog__body">
-        <h2 id="settings-title" class="dialog__title">Settings</h2>
+        <h2 id="settings-title" class="dialog__title" data-i18n="settings.title">Settings</h2>
 
         <fieldset class="field">
-          <legend class="field__label">This PC's name</legend>
+          <legend class="field__label" data-i18n="settings.language.label">Language</legend>
+          <label class="choice"><input type="radio" name="language" value="system" checked /> <span data-i18n="settings.language.system">Follow system</span></label>
+          <label class="choice"><input type="radio" name="language" value="en" /> <span data-i18n="settings.language.en">English</span></label>
+          <label class="choice"><input type="radio" name="language" value="zh-CN" /> <span data-i18n="settings.language.zh">简体中文</span></label>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="field__label" data-i18n="settings.pc_name">This PC's name</legend>
           <input id="pc-name" class="text-input" type="text" name="pc_name" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="pc-name-hint" />
-          <p class="panel__hint" id="pc-name-hint">What your phone calls this computer: in OPPO Share and in Settings → Device connect. Leave it empty to use the computer's name. The phone picks up a new name when it next connects.</p>
+          <p class="panel__hint" id="pc-name-hint" data-i18n="settings.pc_name_hint">What your phone calls this computer: in OPPO Share and in Settings → Device connect. Leave it empty to use the computer's name. The phone picks up a new name when it next connects.</p>
         </fieldset>
 
         <fieldset class="field">
-          <legend class="field__label">Look</legend>
-          <label class="choice"><input type="radio" name="theme" value="system" /> <span><b>Match my desktop</b> · Midnight when it's dark, Classic when it's light</span></label>
-          <label class="choice"><input type="radio" name="theme" value="midnight" /> <span><b>Midnight</b> · black and green</span></label>
-          <label class="choice"><input type="radio" name="theme" value="classic" /> <span><b>Classic</b> · light and colourful</span></label>
+          <legend class="field__label" data-i18n="settings.look">Look</legend>
+          <label class="choice"><input type="radio" name="theme" value="system" /> <span data-i18n-b="settings.theme.system"><b>Match my desktop</b> · Midnight when it's dark, Classic when it's light</span></label>
+          <label class="choice"><input type="radio" name="theme" value="midnight" /> <span data-i18n-b="settings.theme.midnight"><b>Midnight</b> · black and green</span></label>
+          <label class="choice"><input type="radio" name="theme" value="classic" /> <span data-i18n-b="settings.theme.classic"><b>Classic</b> · light and colourful</span></label>
         </fieldset>
 
         <fieldset class="field">
-          <legend class="field__label">Phone screen quality</legend>
-          <label class="choice"><input type="radio" name="cast_quality" value="smooth" /> <span><b>Smooth</b> · for a weak Wi-Fi connection</span></label>
-          <label class="choice"><input type="radio" name="cast_quality" value="balanced" /> <span><b>Balanced</b> · recommended</span></label>
-          <label class="choice"><input type="radio" name="cast_quality" value="sharp" /> <span><b>Sharp</b> · full resolution, needs good Wi-Fi</span></label>
+          <legend class="field__label" data-i18n="settings.quality.label">Phone screen quality</legend>
+          <label class="choice"><input type="radio" name="cast_quality" value="smooth" /> <span data-i18n-b="settings.quality.smooth"><b>Smooth</b> · for a weak Wi-Fi connection</span></label>
+          <label class="choice"><input type="radio" name="cast_quality" value="balanced" /> <span data-i18n-b="settings.quality.balanced"><b>Balanced</b> · recommended</span></label>
+          <label class="choice"><input type="radio" name="cast_quality" value="sharp" /> <span data-i18n-b="settings.quality.sharp"><b>Sharp</b> · full resolution, needs good Wi-Fi</span></label>
         </fieldset>
 
         <fieldset class="field">
-          <legend class="field__label">Touchpad and mouse wheel</legend>
-          <label class="choice"><input type="radio" name="scroll_mode" value="swipe" /> <span><b>Swipe</b> · scrolls like a finger (works in every app)</span></label>
-          <label class="choice"><input type="radio" name="scroll_mode" value="scroll" /> <span><b>Scroll</b> · scroll events (some apps ignore them)</span></label>
+          <legend class="field__label" data-i18n="settings.scroll.label">Touchpad and mouse wheel</legend>
+          <label class="choice"><input type="radio" name="scroll_mode" value="swipe" /> <span data-i18n-b="settings.scroll.swipe"><b>Swipe</b> · scrolls like a finger (works in every app)</span></label>
+          <label class="choice"><input type="radio" name="scroll_mode" value="scroll" /> <span data-i18n-b="settings.scroll.scroll"><b>Scroll</b> · scroll events (some apps ignore them)</span></label>
         </fieldset>
 
         <fieldset class="field">
-          <legend class="field__label">Notifications and clipboard</legend>
-          <label class="choice"><input type="checkbox" name="desktop_notifications" /> <span>Show phone notifications as desktop pop-ups</span></label>
-          <label class="choice"><input type="checkbox" name="share_clipboard" /> <span>Share the clipboard with the phone (passwords from password managers are never sent)</span></label>
+          <legend class="field__label" data-i18n="settings.notify.label">Notifications and clipboard</legend>
+          <label class="choice"><input type="checkbox" name="desktop_notifications" /> <span data-i18n="settings.notify.desktop">Show phone notifications as desktop pop-ups</span></label>
+          <label class="choice"><input type="checkbox" name="share_clipboard" /> <span data-i18n="settings.notify.clip">Share the clipboard with the phone (passwords from password managers are never sent)</span></label>
         </fieldset>
 
         <fieldset class="field">
-          <legend class="field__label">Running in the background</legend>
-          <label class="choice"><input type="checkbox" name="start_on_login" /> <span>Start Olink in the tray when I log in</span></label>
-          <p class="panel__hint">Closing this window keeps Olink running in the tray, so your phone can still connect. Quit it from the tray icon.</p>
+          <legend class="field__label" data-i18n="settings.background.label">Running in the background</legend>
+          <label class="choice"><input type="checkbox" name="start_on_login" /> <span data-i18n="settings.background.login">Start Olink in the tray when I log in</span></label>
+          <p class="panel__hint" data-i18n="settings.background.hint">Closing this window keeps Olink running in the tray, so your phone can still connect. Quit it from the tray icon.</p>
         </fieldset>
 
-        <p class="panel__hint">Changes are saved right away. Screen quality applies the next time you show the phone screen.</p>
+        <p class="panel__hint" data-i18n="settings.saved">Changes are saved right away. Screen quality applies the next time you show the phone screen.</p>
         <div class="dialog__actions">
-          <button class="btn btn--primary" value="close">Done</button>
+          <button class="btn btn--primary" value="close" data-i18n="settings.done">Done</button>
         </div>
       </form>
     </dialog>
 
     <dialog id="pair-ask" class="dialog" aria-labelledby="pair-ask-title">
       <div class="dialog__body">
-        <h2 id="pair-ask-title" class="dialog__title">Allow this phone to connect?</h2>
+        <h2 id="pair-ask-title" class="dialog__title" data-i18n="pair.ask.title">Allow this phone to connect?</h2>
         <div class="who">
           <div class="who__name" id="pair-ask-name"></div>
           <div class="who__meta" id="pair-ask-meta"></div>
         </div>
-        <p class="panel__hint">
+        <p class="panel__hint" data-i18n="pair.ask.hint">
           Only allow it if you just scanned the QR code with this phone. Once allowed, it can share your
           clipboard, send you files and show notifications on this computer.
         </p>
         <p class="panel__hint" id="pair-ask-timer" aria-live="polite"></p>
         <div class="dialog__actions">
-          <button id="pair-deny" class="btn" type="button">Don't allow</button>
-          <button id="pair-allow" class="btn btn--primary" type="button">Allow</button>
+          <button id="pair-deny" class="btn" type="button" data-i18n="pair.ask.deny">Don't allow</button>
+          <button id="pair-allow" class="btn btn--primary" type="button" data-i18n="pair.ask.allow">Allow</button>
         </div>
       </div>
     </dialog>

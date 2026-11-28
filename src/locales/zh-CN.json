@@ -1,0 +1,199 @@
+{
+  "app": {
+    "title": "Olink",
+    "tagline": "在 Linux 上使用你的手机"
+  },
+  "conn": {
+    "on": "已连接",
+    "off": "未连接",
+    "peer": "手机地址 {{peer}}"
+  },
+  "battery": {
+    "level": "{{level}}%",
+    "charging": "{{level}}% · 充电中",
+    "title": "手机电量"
+  },
+  "pair": {
+    "title": "连接手机",
+    "qr": "配对二维码",
+    "starting": "正在启动…",
+    "step1": "让手机和这台电脑连接同一个 Wi-Fi。",
+    "step2": "在手机上打开<b>设置 → 设备互联 → 电脑</b>，选择扫描二维码。",
+    "step3": "扫描此二维码。",
+    "again": "以前连接过？在手机上打开<b>设置 → 设备互联 → 电脑</b>，点这台电脑即可，无需扫码。",
+    "addr": "这台电脑：{{addr}}",
+    "ask": {
+      "title": "允许这台手机连接？",
+      "unknown": "未知手机",
+      "model": "型号 {{model}}",
+      "at": "位于 {{addr}}",
+      "hint": "只有刚才用这台手机扫描了二维码时才允许。允许之后，它可以共享剪贴板、向你发送文件，并在这台电脑上显示通知。",
+      "timer": "此请求将在 {{seconds}} 秒后过期。",
+      "deny": "不允许",
+      "allow": "允许",
+      "denied": "未允许配对",
+      "allowed": "已允许，正在完成连接…"
+    }
+  },
+  "screen": {
+    "title": "手机屏幕",
+    "hint": "在这里用窗口显示手机，并用鼠标和键盘操作。",
+    "showing": "显示中",
+    "cast": "显示手机屏幕",
+    "footer": "也可以在手机上开始：<b>设置 → 设备互联 → 电脑 → 投屏</b>。关闭窗口即停止。",
+    "asking": "正在让手机共享屏幕…"
+  },
+  "apps": {
+    "title": "或只显示一个应用",
+    "hint": "它会在单独的窗口中打开，手机仍可正常使用。",
+    "search": "搜索应用",
+    "waiting": "正在等待手机上的应用列表…",
+    "none": "没有匹配“{{query}}”的应用。",
+    "recent": "最近使用",
+    "all": "全部应用",
+    "apps": "应用",
+    "show": "显示 {{name}}（{{pkg}}）",
+    "asking": "正在让手机显示 {{name}}…"
+  },
+  "files": {
+    "title": "文件",
+    "hint": "把文件或文件夹拖到这个窗口的任意位置即可发送。手机分享过来的文件会保存到<b>Downloads/Olink</b>。",
+    "open": "打开已接收",
+    "folder": "发送文件夹…",
+    "send": "发送文件…"
+  },
+  "notif": {
+    "title": "最近的通知"
+  },
+  "settings": {
+    "open": "设置",
+    "title": "设置",
+    "pc_name": "这台电脑的名称",
+    "pc_name_hint": "手机上显示的这台电脑的名称，用于 OPPO 互传和“设置 → 设备互联”。留空则使用电脑本身的名称。手机在下次连接时会使用新名称。",
+    "look": "外观",
+    "theme": {
+      "system": "<b>跟随桌面</b> · 深色时为 Midnight，浅色时为 Classic",
+      "midnight": "<b>Midnight</b> · 黑与绿",
+      "classic": "<b>Classic</b> · 明亮多彩"
+    },
+    "quality": {
+      "label": "手机画面质量",
+      "smooth": "<b>流畅</b> · 适合较弱的 Wi-Fi",
+      "balanced": "<b>均衡</b> · 推荐",
+      "sharp": "<b>清晰</b> · 全分辨率，需要较好的 Wi-Fi"
+    },
+    "scroll": {
+      "label": "触控板与鼠标滚轮",
+      "swipe": "<b>滑动</b> · 像手指一样滑动（所有应用都可用）",
+      "scroll": "<b>滚动</b> · 滚动事件（部分应用会忽略）"
+    },
+    "notify": {
+      "label": "通知与剪贴板",
+      "desktop": "将手机通知显示为桌面弹窗",
+      "clip": "与手机共享剪贴板（密码管理器中的密码永远不会发送）"
+    },
+    "background": {
+      "label": "后台运行",
+      "login": "登录时在托盘中启动 Olink",
+      "hint": "关闭此窗口后，Olink 仍在托盘中运行，手机可以继续连接。请从托盘图标退出。"
+    },
+    "saved": "更改会立即保存。画面质量在下次显示手机屏幕时生效。",
+    "done": "完成",
+    "language": {
+      "label": "语言",
+      "system": "跟随系统",
+      "en": "English",
+      "zh": "简体中文"
+    }
+  },
+  "drop": {
+    "title": "松开即可发送到手机",
+    "sub": "手机上会请你确认接收。",
+    "need_title": "请先连接手机",
+    "need_sub": "然后再拖放这些文件。"
+  },
+  "transfer": {
+    "cancel": "取消",
+    "to": "发送到手机：\n{{files}}",
+    "from": "来自手机：\n{{files}}",
+    "more": "{{name}} 及其他 {{count}} 个",
+    "files": "文件",
+    "waiting": "等待你在手机上接受 · {{size}}",
+    "sending": "正在发送 · {{size}} 的 {{pct}}%",
+    "receiving": "正在接收 · {{size}} 的 {{pct}}%",
+    "sent": "已发送 · {{size}}",
+    "saved": "已保存 · {{size}}",
+    "not_sent": "未发送：已取消、手机上拒绝，或连接中断",
+    "not_saved": "未能保存全部文件",
+    "toast_sent": "已发送到手机",
+    "toast_received": "已从手机接收",
+    "folder_one": "{{name}}（1 个文件）",
+    "folder_other": "{{name}}（{{count}} 个文件）"
+  },
+  "toast": {
+    "connected": "手机已连接",
+    "disconnected": "手机已断开"
+  },
+  "demo": {
+    "need_app": "请在应用内打开以使用手机。"
+  },
+  "tray": {
+    "connected": "手机：已连接",
+    "disconnected": "手机：未连接",
+    "open": "打开 Olink",
+    "quit": "退出"
+  },
+  "cast": {
+    "title": "手机"
+  },
+  "dialog": {
+    "send_files": "发送到手机",
+    "send_folders": "发送文件夹到手机",
+    "send": "发送(_S)",
+    "cancel": "取消(_C)",
+    "picker_closed": "文件选择窗口已关闭。",
+    "big_title": "要将 {{size}} 发送到手机吗？",
+    "big_one": "共 {{count}} 个文件。",
+    "big_other": "共 {{count}} 个文件。",
+    "big_part": " 其中大部分在 {{part}}（{{size}}）。",
+    "bytes": "{{n}} 字节",
+    "open_failed": "无法打开 {{path}}：{{error}}"
+  },
+  "notify": {
+    "received": "已从手机接收",
+    "received_body": "{{what}}，已保存到 Downloads/Olink",
+    "files_other": "{{count}} 个文件"
+  },
+  "status": {
+    "already_running": "Olink 已在运行，正在把它显示出来。"
+  },
+  "error": {
+    "ports_busy": "另一个程序占用了 Olink 的网络端口，因此无法连接手机。请关闭该程序后重新启动 Olink。",
+    "connection_stopped": "与手机的连接已停止：{{error}}",
+    "not_running": "Olink 未在运行。",
+    "invalid_settings": "设置无效：{{detail}}",
+    "save_settings": "无法保存设置：{{error}}",
+    "autostart": "无法更改登录时启动：{{error}}",
+    "unknown_request": "未知请求“{{cmd}}”",
+    "generic": "错误",
+    "stopped": "Olink 已停止。",
+    "not_background": "Olink 未在后台运行。",
+    "pc_name_len": "电脑名称最多 {{max}} 个字符",
+    "pc_name_chars": "电脑名称不能包含换行或控制字符",
+    "pair_expired": "该请求已过期。",
+    "connect_first": "请先连接手机。",
+    "cant_read": "无法读取 {{name}}：{{error}}",
+    "cant_send": "无法发送 {{path}}。",
+    "not_regular": "{{name}} 不是普通文件。",
+    "too_big": "{{name}} 达到或超过 4 GB，暂时无法发送。",
+    "nothing": "没有可发送的内容。",
+    "transfer_ended": "该传输已经结束。",
+    "phone_disconnected": "手机已断开连接。",
+    "nested": "{{path}} 的目录嵌套过深。",
+    "too_many": "该文件夹的项目超过 {{max}} 个。",
+    "empty_folder": "{{name}} 中没有文件。",
+    "no_phone": "没有连接手机（或投屏已关闭）",
+    "bad_package": "不是应用包名：“{{name}}”",
+    "cast_closed": "与手机的连接已关闭"
+  }
+}

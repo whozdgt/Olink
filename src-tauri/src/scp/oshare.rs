@@ -308,8 +308,15 @@ async fn receive_session(info: &OshareInfo, ip: &str, port: u16) -> anyhow::Resu
                     json!({"taskId": offer.task_id, "type": if ok { 1 } else { 2 }}),
                 );
                 if ok && !saved_names.is_empty() && !crate::desktop::window_open() {
-                    let what = if saved_names.len() == 1 { saved_names[0].clone() } else { format!("{} files", saved_names.len()) };
-                    crate::util::desktop_notify("Received from your phone", &format!("{what}, saved in Downloads/Olink"));
+                    let what = if saved_names.len() == 1 {
+                        saved_names[0].clone()
+                    } else {
+                        crate::i18n::t("notify.files_other", &[("count", &saved_names.len().to_string())])
+                    };
+                    crate::util::desktop_notify(
+                        &crate::i18n::t("notify.received", &[]),
+                        &crate::i18n::t("notify.received_body", &[("what", &what)]),
+                    );
                 }
                 let (state, files) = if ok { (crate::events::TransferState::Done, saved_names) } else { (crate::events::TransferState::Failed, offered) };
                 crate::events::emit(transfer(state, files, got));

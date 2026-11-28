@@ -3,14 +3,21 @@
 //! is a separate process (`--window`, see `ipc`): started when opened, gone
 //! when closed, so the web view's memory is only used while it's on screen.
 
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::OnceLock;
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Wry};
 
-static STATUS_ITEM: OnceLock<MenuItem<Wry>> = OnceLock::new();
+struct TrayMenu {
+    status: MenuItem<Wry>,
+    open: MenuItem<Wry>,
+    quit: MenuItem<Wry>,
+}
+
+static TRAY: OnceLock<TrayMenu> = OnceLock::new();
+static PHONE_CONNECTED: AtomicBool = AtomicBool::new(false);
 /// The window process's pid while it runs (0: none).
 static WINDOW_PID: AtomicU32 = AtomicU32::new(0);
 
@@ -60,11 +67,11 @@ pub fn close_window() {
 
 /// Tray icon with a small menu (Linux trays open the menu on click).
 pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
-    let status = MenuItem::with_id(app, "status", "Phone: not connected", false, None::<&str>)?;
-    let open = MenuItem::with_id(app, "open", "Open Olink", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let status = MenuItem::with_id(app, "status", crate::i18n::t("tray.disconnected", &[]), false, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", crate::i18n::t("tray.open", &[]), true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", crate::i18n::t("tray.quit", &[]), true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&status, &PredefinedMenuItem::separator(app)?, &open, &quit])?;
-    let _ = STATUS_ITEM.set(status);
+    let _ = TRAY.set(TrayMenu { status, open, quit });
     TrayIconBuilder::with_id("main")
         .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/128x128.png"))?)
         .tooltip("Olink")
@@ -84,9 +91,21 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Keep the tray's status line current.
-pub fn set_status(text: &str) {
-    if let Some(item) = STATUS_ITEM.get() {
-        let _ = item.set_text(text);
-    }
+/// Phone link up or down. Refreshes the status line in the current language.
+pub fn set_phone_connected(on: bool) {
+    PHONE_CONNECTED.store(on, Ordering::SeqCst);
+    refresh_tray();
+}
+
+/// Rewrite the tray labels from the active catalog (language change, or status).
+pub fn refresh_tray() {
+    let Some(tray) = TRAY.get() else { return };
+    let status = if PHONE_CONNECTED.load(Ordering::SeqCst) {
+        crate::i18n::t("tray.connected", &[])
+    } else {
+        crate::i18n::t("tray.disconnected", &[])
+    };
+    let _ = tray.status.set_text(status);
+    let _ = tray.open.set_text(crate::i18n::t("tray.open", &[]));
+    let _ = tray.quit.set_text(crate::i18n::t("tray.quit", &[]));
 }

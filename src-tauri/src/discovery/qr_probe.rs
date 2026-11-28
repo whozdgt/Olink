@@ -730,7 +730,10 @@ async fn handle_service_frame(
                         println!("  ★ FILE saved: {} ({} of {} bytes)", fr.path.display(), fr.written, fr.total);
                         if !crate::desktop::window_open() {
                             let name = fr.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                            crate::util::desktop_notify("Received from your phone", &format!("{name}, saved in Downloads/Olink"));
+                            crate::util::desktop_notify(
+                                &crate::i18n::t("notify.received", &[]),
+                                &crate::i18n::t("notify.received_body", &[("what", &name)]),
+                            );
                         }
                         let d = st.wrap(sid, &icdf::data_frame(stream, icdf::CMD_SERVER_DATA_TO_CLIENT, 0, &icdf::file_status_proto(0, fr.written)))?;
                         epi::write_msg(s, &d).await?;
@@ -759,16 +762,16 @@ static CAST_REQ: std::sync::Mutex<Option<tokio::sync::mpsc::UnboundedSender<Cast
 /// Ask the connected phone to start casting (as if Screencast was tapped on it).
 /// `app`: a package name to cast just that app; `None` for the whole screen.
 pub fn request_cast(app: Option<String>) -> anyhow::Result<()> {
-    let tx = CAST_REQ.lock().unwrap().clone().ok_or_else(|| anyhow::anyhow!("no phone connected (or casting disabled)"))?;
+    let tx = CAST_REQ.lock().unwrap().clone().ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("error.no_phone", &[])))?;
     let ev = match app {
         Some(a) => {
             // Package names only (letters, digits, '_' and '.'); this goes to the phone.
-            anyhow::ensure!(crate::scp::phoneapps::valid_package(&a), "not an app package name: {a:?}");
+            anyhow::ensure!(crate::scp::phoneapps::valid_package(&a), "{}", crate::i18n::t("error.bad_package", &[("name", &a)]));
             CastEv::StartApp(a)
         }
         None => CastEv::Start,
     };
-    tx.send(ev).map_err(|_| anyhow::anyhow!("phone connection closed"))
+    tx.send(ev).map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("error.cast_closed", &[])))
 }
 
 /// Emits Disconnected when an authenticated data channel goes away.

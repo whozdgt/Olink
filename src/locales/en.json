@@ -1,0 +1,199 @@
+{
+  "app": {
+    "title": "Olink",
+    "tagline": "Your phone on Linux"
+  },
+  "conn": {
+    "on": "Connected",
+    "off": "Not connected",
+    "peer": "Phone at {{peer}}"
+  },
+  "battery": {
+    "level": "{{level}}%",
+    "charging": "{{level}}% · charging",
+    "title": "Phone battery"
+  },
+  "pair": {
+    "title": "Connect your phone",
+    "qr": "Pairing QR code",
+    "starting": "Starting…",
+    "step1": "Put the phone on the same Wi-Fi as this computer.",
+    "step2": "On the phone, open <b>Settings → Device connect → PC</b> and choose to scan a QR code.",
+    "step3": "Scan this code.",
+    "again": "Connected before? Tap this PC in <b>Settings → Device connect → PC</b> on the phone, no QR needed.",
+    "addr": "This computer: {{addr}}",
+    "ask": {
+      "title": "Allow this phone to connect?",
+      "unknown": "Unknown phone",
+      "model": "Model {{model}}",
+      "at": "at {{addr}}",
+      "hint": "Only allow it if you just scanned the QR code with this phone. Once allowed, it can share your clipboard, send you files and show notifications on this computer.",
+      "timer": "This request expires in {{seconds}} s.",
+      "deny": "Don't allow",
+      "allow": "Allow",
+      "denied": "Pairing not allowed",
+      "allowed": "Allowed. Finishing the connection…"
+    }
+  },
+  "screen": {
+    "title": "Phone screen",
+    "hint": "Show the phone in a window here and use it with your mouse and keyboard.",
+    "showing": "Showing",
+    "cast": "Show phone screen",
+    "footer": "You can also start it on the phone: <b>Settings → Device connect → PC → Screencast</b>. Close the window to stop.",
+    "asking": "Asking the phone to share its screen…"
+  },
+  "apps": {
+    "title": "Or show one app",
+    "hint": "It opens in its own window, and the phone stays free to use.",
+    "search": "Search apps",
+    "waiting": "Waiting for the phone's app list…",
+    "none": "No app matches “{{query}}”.",
+    "recent": "Recent",
+    "all": "All apps",
+    "apps": "Apps",
+    "show": "Show {{name}} ({{pkg}})",
+    "asking": "Asking the phone to show {{name}}…"
+  },
+  "files": {
+    "title": "Files",
+    "hint": "Drop files or folders anywhere on this window to send them. Files shared from the phone are saved in <b>Downloads/Olink</b>.",
+    "open": "Open received",
+    "folder": "Send folder…",
+    "send": "Send files…"
+  },
+  "notif": {
+    "title": "Recent notifications"
+  },
+  "settings": {
+    "open": "Settings",
+    "title": "Settings",
+    "pc_name": "This PC's name",
+    "pc_name_hint": "What your phone calls this computer: in OPPO Share and in Settings → Device connect. Leave it empty to use the computer's name. The phone picks up a new name when it next connects.",
+    "look": "Look",
+    "theme": {
+      "system": "<b>Match my desktop</b> · Midnight when it's dark, Classic when it's light",
+      "midnight": "<b>Midnight</b> · black and green",
+      "classic": "<b>Classic</b> · light and colourful"
+    },
+    "quality": {
+      "label": "Phone screen quality",
+      "smooth": "<b>Smooth</b> · for a weak Wi-Fi connection",
+      "balanced": "<b>Balanced</b> · recommended",
+      "sharp": "<b>Sharp</b> · full resolution, needs good Wi-Fi"
+    },
+    "scroll": {
+      "label": "Touchpad and mouse wheel",
+      "swipe": "<b>Swipe</b> · scrolls like a finger (works in every app)",
+      "scroll": "<b>Scroll</b> · scroll events (some apps ignore them)"
+    },
+    "notify": {
+      "label": "Notifications and clipboard",
+      "desktop": "Show phone notifications as desktop pop-ups",
+      "clip": "Share the clipboard with the phone (passwords from password managers are never sent)"
+    },
+    "background": {
+      "label": "Running in the background",
+      "login": "Start Olink in the tray when I log in",
+      "hint": "Closing this window keeps Olink running in the tray, so your phone can still connect. Quit it from the tray icon."
+    },
+    "saved": "Changes are saved right away. Screen quality applies the next time you show the phone screen.",
+    "done": "Done",
+    "language": {
+      "label": "Language",
+      "system": "Follow system",
+      "en": "English",
+      "zh": "简体中文"
+    }
+  },
+  "drop": {
+    "title": "Drop to send to your phone",
+    "sub": "The phone asks you to accept.",
+    "need_title": "Connect your phone first",
+    "need_sub": "Then drop the files again."
+  },
+  "transfer": {
+    "cancel": "Cancel",
+    "to": "To the phone:\n{{files}}",
+    "from": "From the phone:\n{{files}}",
+    "more": "{{name}} + {{count}} more",
+    "files": "Files",
+    "waiting": "Waiting for you to accept on the phone · {{size}}",
+    "sending": "Sending · {{pct}}% of {{size}}",
+    "receiving": "Receiving · {{pct}}% of {{size}}",
+    "sent": "Sent · {{size}}",
+    "saved": "Saved · {{size}}",
+    "not_sent": "Not sent: cancelled, declined on the phone, or the connection dropped",
+    "not_saved": "Couldn't save all files",
+    "toast_sent": "Sent to the phone",
+    "toast_received": "Received from the phone",
+    "folder_one": "{{name}} (1 file)",
+    "folder_other": "{{name}} ({{count}} files)"
+  },
+  "toast": {
+    "connected": "Phone connected",
+    "disconnected": "Phone disconnected"
+  },
+  "demo": {
+    "need_app": "Open this inside the app to use the phone."
+  },
+  "tray": {
+    "connected": "Phone: connected",
+    "disconnected": "Phone: not connected",
+    "open": "Open Olink",
+    "quit": "Quit"
+  },
+  "cast": {
+    "title": "Phone"
+  },
+  "dialog": {
+    "send_files": "Send to phone",
+    "send_folders": "Send folders to phone",
+    "send": "_Send",
+    "cancel": "_Cancel",
+    "picker_closed": "The file picker closed.",
+    "big_title": "Send {{size}} to your phone?",
+    "big_one": "That's {{count}} file.",
+    "big_other": "That's {{count}} files.",
+    "big_part": " Most of it is in {{part}} ({{size}}).",
+    "bytes": "{{n}} bytes",
+    "open_failed": "Couldn't open {{path}}: {{error}}"
+  },
+  "notify": {
+    "received": "Received from your phone",
+    "received_body": "{{what}}, saved in Downloads/Olink",
+    "files_other": "{{count}} files"
+  },
+  "status": {
+    "already_running": "Olink is already running; showing it."
+  },
+  "error": {
+    "ports_busy": "Another program is using Olink's network ports, so it can't reach your phone. Close it, then start Olink again.",
+    "connection_stopped": "The phone connection stopped: {{error}}",
+    "not_running": "Olink isn't running.",
+    "invalid_settings": "Invalid settings: {{detail}}",
+    "save_settings": "Couldn't save settings: {{error}}",
+    "autostart": "Couldn't change start on login: {{error}}",
+    "unknown_request": "unknown request \"{{cmd}}\"",
+    "generic": "error",
+    "stopped": "Olink stopped.",
+    "not_background": "Olink isn't running in the background.",
+    "pc_name_len": "the PC name can be at most {{max}} characters",
+    "pc_name_chars": "the PC name can't contain line breaks or control characters",
+    "pair_expired": "That request has expired.",
+    "connect_first": "Connect your phone first.",
+    "cant_read": "Can't read {{name}}: {{error}}",
+    "cant_send": "{{path}} can't be sent.",
+    "not_regular": "{{name}} isn't a regular file.",
+    "too_big": "{{name}} is 4 GB or larger, which can't be sent yet.",
+    "nothing": "Nothing to send.",
+    "transfer_ended": "That transfer has already ended.",
+    "phone_disconnected": "The phone disconnected.",
+    "nested": "{{path}} is nested too deeply.",
+    "too_many": "The folder has more than {{max}} items.",
+    "empty_folder": "{{name}} has no files in it.",
+    "no_phone": "no phone connected (or casting disabled)",
+    "bad_package": "not an app package name: \"{{name}}\"",
+    "cast_closed": "phone connection closed"
+  }
+}

@@ -91,7 +91,11 @@ impl SendFile {
     fn label(&self) -> String {
         if self.is_folder {
             let n = self.folder.iter().filter(|e| !e.dir).count();
-            format!("{} ({n} file{})", self.name, if n == 1 { "" } else { "s" })
+            if n == 1 {
+                crate::i18n::t("transfer.folder_one", &[("name", &self.name)])
+            } else {
+                crate::i18n::t("transfer.folder_other", &[("name", &self.name), ("count", &n.to_string())])
+            }
         } else {
             self.name.clone()
         }
@@ -104,10 +108,10 @@ impl SendFile {
 fn collect_folder(root: &std::path::Path, top: &str) -> anyhow::Result<Vec<FolderEntry>> {
     const MAX_ENTRIES: usize = 100_000;
     fn walk(dir: &std::path::Path, prefix: &str, out: &mut Vec<FolderEntry>, depth: usize) -> anyhow::Result<()> {
-        anyhow::ensure!(depth < 64, "{} is nested too deeply.", dir.display());
+        anyhow::ensure!(depth < 64, "{}", crate::i18n::t("error.nested", &[("path", &dir.display().to_string())]));
         let mut dirs = vec![];
         let mut files = vec![];
-        for ent in std::fs::read_dir(dir).map_err(|e| anyhow::anyhow!("Can't read {}: {e}", dir.display()))? {
+        for ent in std::fs::read_dir(dir).map_err(|e| anyhow::anyhow!("{}", crate::i18n::t("error.cant_read", &[("name", &dir.display().to_string()), ("error", &e.to_string())])))? {
             let ent = ent?;
             let name = ent.file_name().to_string_lossy().into_owned();
             let rel = if prefix.is_empty() { name } else { format!("{prefix}/{}", ent.file_name().to_string_lossy()) };
@@ -115,7 +119,7 @@ fn collect_folder(root: &std::path::Path, top: &str) -> anyhow::Result<Vec<Folde
             if meta.is_dir() {
                 dirs.push((rel, ent.path()));
             } else if meta.is_file() {
-                anyhow::ensure!(meta.len() <= MAX_FILE, "{rel} is 4 GB or larger, which can't be sent yet.");
+                anyhow::ensure!(meta.len() <= MAX_FILE, "{}", crate::i18n::t("error.too_big", &[("name", &rel)]));
                 files.push(FolderEntry { rel, path: ent.path(), size: meta.len(), dir: false });
             }
         }
@@ -124,15 +128,15 @@ fn collect_folder(root: &std::path::Path, top: &str) -> anyhow::Result<Vec<Folde
         for (rel, path) in dirs {
             out.push(FolderEntry { rel: rel.clone(), path: path.clone(), size: 0, dir: true });
             walk(&path, &rel, out, depth + 1)?;
-            anyhow::ensure!(out.len() <= MAX_ENTRIES, "The folder has more than {MAX_ENTRIES} items.");
+            anyhow::ensure!(out.len() <= MAX_ENTRIES, "{}", crate::i18n::t("error.too_many", &[("max", &MAX_ENTRIES.to_string())]));
         }
         out.extend(files);
-        anyhow::ensure!(out.len() <= MAX_ENTRIES, "The folder has more than {MAX_ENTRIES} items.");
+        anyhow::ensure!(out.len() <= MAX_ENTRIES, "{}", crate::i18n::t("error.too_many", &[("max", &MAX_ENTRIES.to_string())]));
         Ok(())
     }
     let mut out = vec![];
     walk(root, "", &mut out, 0)?;
-    anyhow::ensure!(out.iter().any(|e| !e.dir), "{top} has no files in it.");
+    anyhow::ensure!(out.iter().any(|e| !e.dir), "{}", crate::i18n::t("error.empty_folder", &[("name", top)]));
     Ok(out)
 }
 
@@ -254,29 +258,29 @@ async fn serve() -> anyhow::Result<u16> {
 /// are and never moved. Errors are worded for the user.
 pub fn send_paths(paths: &[PathBuf]) -> anyhow::Result<String> {
     if !connected() {
-        anyhow::bail!("Connect your phone first.");
+        anyhow::bail!("{}", crate::i18n::t("error.connect_first", &[]));
     }
     let mut files = vec![];
     for p in paths {
         let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-        let meta = std::fs::metadata(p).map_err(|e| anyhow::anyhow!("Can't read {name}: {e}"))?;
+        let meta = std::fs::metadata(p).map_err(|e| anyhow::anyhow!("{}", crate::i18n::t("error.cant_read", &[("name", &name), ("error", &e.to_string())])))?;
         if name.is_empty() {
-            anyhow::bail!("{} can't be sent.", p.display());
+            anyhow::bail!("{}", crate::i18n::t("error.cant_send", &[("path", &p.display().to_string())]));
         }
         if meta.is_dir() {
             files.push(SendFile::folder(p.clone(), name)?);
             continue;
         }
         if !meta.is_file() {
-            anyhow::bail!("{name} isn't a regular file.");
+            anyhow::bail!("{}", crate::i18n::t("error.not_regular", &[("name", &name)]));
         }
         if meta.len() > MAX_FILE {
-            anyhow::bail!("{name} is 4 GB or larger, which can't be sent yet.");
+            anyhow::bail!("{}", crate::i18n::t("error.too_big", &[("name", &name)]));
         }
         files.push(SendFile::file(p.clone(), name, meta.len(), false));
     }
     if files.is_empty() {
-        anyhow::bail!("Nothing to send.");
+        anyhow::bail!("{}", crate::i18n::t("error.nothing", &[]));
     }
     queue(files)
 }
@@ -285,7 +289,7 @@ pub fn send_paths(paths: &[PathBuf]) -> anyhow::Result<String> {
 /// (status "cancel"), downloads in progress stop, nothing more is served.
 pub fn cancel(task_id: &str) -> anyhow::Result<()> {
     let notify = reg().cancels.get(task_id).cloned();
-    anyhow::ensure!(reg().tasks.contains_key(task_id), "That transfer has already ended.");
+    anyhow::ensure!(reg().tasks.contains_key(task_id), "{}", crate::i18n::t("error.transfer_ended", &[]));
     if let Some(n) = notify {
         n.notify_one();
     }
@@ -306,7 +310,7 @@ fn queue(files: Vec<SendFile>) -> anyhow::Result<String> {
     emit_task(&task_id, TransferState::Waiting);
     if !announce(&task_id) {
         finish_task(&task_id, false);
-        anyhow::bail!("The phone disconnected.");
+        anyhow::bail!("{}", crate::i18n::t("error.phone_disconnected", &[]));
     }
     Ok(task_id)
 }
@@ -969,7 +973,9 @@ mod tests {
         let order: Vec<(&str, bool)> = f.folder.iter().map(|e| (e.rel.as_str(), e.dir)).collect();
         // Per level: each subfolder then its contents, then the files; no symlink.
         assert_eq!(order, [("2026", true), ("2026/nov", true), ("2026/nov/b.txt", false), ("2026/z.txt", false), ("empty", true), ("a.txt", false)]);
-        assert_eq!((f.size, f.label()), (3, "Photos (3 files)".to_string()));
+        let label = f.label();
+        assert_eq!(f.size, 3);
+        assert!(label.contains("Photos") && label.contains('3'), "{label}");
         let m: serde_json::Value = serde_json::from_slice(&folder_manifest(&f.folder)).unwrap();
         let e = m["entries"].as_array().unwrap();
         assert_eq!(e[0], json!({"t": 0, "p": "2026", "s": 0}));

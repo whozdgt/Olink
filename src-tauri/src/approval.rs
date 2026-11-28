@@ -99,7 +99,7 @@ pub fn answer(id: &str, allow: bool) -> anyhow::Result<()> {
         }
         other => {
             *PENDING.lock().unwrap_or_else(|p| p.into_inner()) = other;
-            anyhow::bail!("That request has expired.")
+            anyhow::bail!("{}", crate::i18n::t("error.pair_expired", &[]))
         }
     }
 }

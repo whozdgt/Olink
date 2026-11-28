@@ -45,6 +45,30 @@ pub enum ScrollMode {
     Scroll,
 }
 
+/// Which language the app speaks. `"system"` follows the desktop locale.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum Language {
+    /// `LC_ALL`, then `LC_MESSAGES`, then `LANG` (see `i18n`).
+    #[default]
+    #[serde(rename = "system")]
+    System,
+    #[serde(rename = "en")]
+    En,
+    #[serde(rename = "zh-CN")]
+    ZhCn,
+}
+
+impl Language {
+    /// Catalog tag, or `"system"` when the locale should be detected.
+    pub fn code(self) -> &'static str {
+        match self {
+            Language::System => "system",
+            Language::En => "en",
+            Language::ZhCn => "zh-CN",
+        }
+    }
+}
+
 /// The window's look (Streamline's two themes).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
@@ -72,12 +96,12 @@ impl TryFrom<String> for PcName {
     fn try_from(s: String) -> Result<Self, String> {
         let s = s.trim();
         if s.chars().count() > Self::MAX_CHARS {
-            return Err(format!("the PC name can be at most {} characters", Self::MAX_CHARS));
+            return Err(crate::i18n::t("error.pc_name_len", &[("max", &Self::MAX_CHARS.to_string())]));
         }
         // It goes into line-based protocols (the SDP announce) and JSON:
         // no line breaks or other control characters.
         if s.chars().any(char::is_control) {
-            return Err("the PC name can't contain line breaks or control characters".into());
+            return Err(crate::i18n::t("error.pc_name_chars", &[]));
         }
         Ok(PcName(s.to_string()))
     }
@@ -104,11 +128,13 @@ pub struct Settings {
     pub theme: Theme,
     /// What the phone calls this PC (empty: the computer's name).
     pub pc_name: PcName,
+    /// Display language. Missing from an older `settings.json` means System.
+    pub language: Language,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { cast_quality: CastQuality::default(), scroll_mode: ScrollMode::default(), desktop_notifications: true, share_clipboard: true, start_on_login: true, theme: Theme::System, pc_name: PcName::default() }
+        Self { cast_quality: CastQuality::default(), scroll_mode: ScrollMode::default(), desktop_notifications: true, share_clipboard: true, start_on_login: true, theme: Theme::System, pc_name: PcName::default(), language: Language::System }
     }
 }
 
@@ -122,7 +148,8 @@ fn path() -> PathBuf {
 }
 
 static CURRENT: LazyLock<RwLock<Settings>> = LazyLock::new(|| {
-    let s = std::fs::read(path()).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default();
+    let s: Settings = std::fs::read(path()).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default();
+    crate::i18n::note_preference(s.language.code());
     RwLock::new(s)
 });
 
@@ -146,10 +173,23 @@ pub fn pc_name() -> String {
     if n.is_empty() { computer_name() } else { n }
 }
 
+/// Keep a copy the window process was just told to save (the background
+/// process writes the file). Used so later dialogs in this process speak
+/// the language the user just picked.
+pub fn adopt(s: Settings) {
+    // `write()` may be the first touch of CURRENT, whose init records the
+    // language from disk. Record this copy after that, so it wins.
+    let code = s.language.code();
+    *CURRENT.write().unwrap_or_else(|p| p.into_inner()) = s;
+    crate::i18n::note_preference(code);
+}
+
 /// Replace the settings and save them (write a temp file, then rename).
 pub fn set(s: Settings) -> anyhow::Result<()> {
     let bytes = serde_json::to_vec_pretty(&s)?;
+    let code = s.language.code();
     *CURRENT.write().unwrap_or_else(|p| p.into_inner()) = s;
+    crate::i18n::note_preference(code);
     let p = path();
     if let Some(dir) = p.parent() {
         std::fs::create_dir_all(dir)?;
@@ -178,5 +218,22 @@ mod tests {
         assert!(serde_json::from_str::<Settings>(r#"{"pc_name":"evil\r\nDN: x"}"#).is_err());
         assert!(serde_json::from_str::<Settings>(&format!(r#"{{"pc_name":"{}"}}"#, "x".repeat(41))).is_err());
         assert_eq!(serde_json::from_str::<Settings>(r#"{"pc_name":""}"#).unwrap().pc_name, PcName::default());
+    }
+
+    #[test]
+    fn language_defaults_to_system_and_rejects_unknown_tags() {
+        let s: Settings = serde_json::from_str("{}").unwrap();
+        assert_eq!(s.language, Language::System);
+        let s: Settings = serde_json::from_str(r#"{"scroll_mode":"scroll"}"#).unwrap();
+        assert_eq!(s.language, Language::System);
+        assert_eq!(serde_json::from_str::<Settings>(r#"{"language":"en"}"#).unwrap().language, Language::En);
+        assert_eq!(serde_json::from_str::<Settings>(r#"{"language":"zh-CN"}"#).unwrap().language, Language::ZhCn);
+        assert_eq!(serde_json::from_str::<Settings>(r#"{"language":"system"}"#).unwrap().language, Language::System);
+        let saved = serde_json::to_value(Settings { language: Language::ZhCn, ..Settings::default() }).unwrap();
+        assert_eq!(saved["language"], "zh-CN");
+        assert!(serde_json::from_str::<Settings>(r#"{"language":"fr"}"#).is_err());
+        assert!(serde_json::from_str::<Settings>(r#"{"language":"zh_CN"}"#).is_err());
+        assert!(serde_json::from_str::<Settings>(r#"{"language":"ZH-CN"}"#).is_err());
+        assert!(serde_json::from_str::<Settings>(r#"{"language":""}"#).is_err());
     }
 }

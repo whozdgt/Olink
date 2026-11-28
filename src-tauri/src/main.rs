@@ -17,6 +17,7 @@ mod commands;
 mod desktop;
 mod discovery;
 mod events;
+mod i18n;
 mod instance;
 mod ipc;
 mod protocol;
@@ -72,7 +73,7 @@ fn main() {
                     std::process::exit(1);
                 }
                 None => {
-                    eprintln!("Olink isn't running.");
+                    eprintln!("{}", i18n::t("error.not_running", &[]));
                     std::process::exit(1);
                 }
             }
@@ -91,7 +92,7 @@ fn main() {
     let hidden = args.iter().any(|a| a == "--hidden");
     let listener = match instance::claim(!hidden) {
         instance::Instance::Other => {
-            println!("Olink is already running; showing it.");
+            println!("{}", i18n::t("status.already_running", &[]));
             return;
         }
         instance::Instance::First(l) => l,
@@ -120,13 +121,15 @@ fn main() {
                     // A pairing question needs the user now: open the window
                     // (it fetches the pending question when it loads).
                     events::Event::PairRequest { .. } => desktop::open_window(),
-                    events::Event::Connected { .. } => desktop::set_status("Phone: connected"),
-                    events::Event::Disconnected => desktop::set_status("Phone: not connected"),
+                    events::Event::Connected { .. } => desktop::set_phone_connected(true),
+                    events::Event::Disconnected => desktop::set_phone_connected(false),
                     _ => {}
                 }
                 status::on_event(&ev);
                 ipc::broadcast_event(&ev);
             });
+            // Load settings before the tray so its labels match the saved language.
+            let _ = settings::get();
             desktop::create_tray(app.handle())?;
             if let Some(l) = listener {
                 ipc::serve(l, desktop::open_window);
@@ -143,9 +146,9 @@ fn main() {
                     tracing::error!("phone server stopped: {e:#}");
                     let busy = e.downcast_ref::<std::io::Error>().is_some_and(|e| e.kind() == std::io::ErrorKind::AddrInUse);
                     let msg = if busy {
-                        "Another program is using Olink's network ports, so it can't reach your phone. Close it, then start Olink again.".to_string()
+                        i18n::t("error.ports_busy", &[])
                     } else {
-                        format!("The phone connection stopped: {e}")
+                        i18n::t("error.connection_stopped", &[("error", &e.to_string())])
                     };
                     events::emit(events::Event::Fatal { msg });
                 }
@@ -186,6 +189,9 @@ fn small_runtime() -> tokio::runtime::Runtime {
 /// with it.
 fn run_window() {
     util::tune_allocator();
+    // This process shows the file dialogs, so it needs the saved language
+    // before the first one opens.
+    let _ = settings::get();
     // File pickers through the desktop portal; GTK falls back to its own
     // dialog when there's no portal. Single-threaded here, so this is safe.
     if std::env::var_os("GTK_USE_PORTAL").is_none() {
