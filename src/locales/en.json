@@ -195,5 +195,11 @@
     "no_phone": "no phone connected (or casting disabled)",
     "bad_package": "not an app package name: \"{{name}}\"",
     "cast_closed": "phone connection closed"
+  },
+  "welcome": {
+    "title": "Welcome to Olink",
+    "lang": "Choose your language",
+    "hint": "You can change it later in Settings.",
+    "continue": "Continue"
   }
 }

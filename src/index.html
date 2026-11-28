@@ -163,6 +163,23 @@
       </form>
     </dialog>
 
+    <dialog id="welcome" class="dialog" aria-labelledby="welcome-title">
+      <form method="dialog" class="dialog__body">
+        <h2 id="welcome-title" class="dialog__title" data-i18n="welcome.title">Welcome to Olink</h2>
+        <fieldset class="field">
+          <legend class="field__label" data-i18n="welcome.lang">Choose your language</legend>
+          <!-- Each language is named in itself, so it can be found whatever is showing now. -->
+          <label class="choice"><input type="radio" name="welcome_language" value="system" checked /> <span id="welcome-system" data-i18n="settings.language.system">Follow system</span></label>
+          <label class="choice"><input type="radio" name="welcome_language" value="en" /> <span lang="en">English</span></label>
+          <label class="choice"><input type="radio" name="welcome_language" value="zh-CN" /> <span lang="zh-CN">简体中文</span></label>
+        </fieldset>
+        <p class="panel__hint" data-i18n="welcome.hint">You can change it later in Settings.</p>
+        <div class="dialog__actions">
+          <button class="btn btn--primary" value="done" data-i18n="welcome.continue">Continue</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="pair-ask" class="dialog" aria-labelledby="pair-ask-title">
       <div class="dialog__body">
         <h2 id="pair-ask-title" class="dialog__title" data-i18n="pair.ask.title">Allow this phone to connect?</h2>

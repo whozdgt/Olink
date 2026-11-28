@@ -195,5 +195,11 @@
     "no_phone": "没有连接手机（或投屏已关闭）",
     "bad_package": "不是应用包名：“{{name}}”",
     "cast_closed": "与手机的连接已关闭"
+  },
+  "welcome": {
+    "title": "欢迎使用 Olink",
+    "lang": "选择语言",
+    "hint": "之后可以在“设置”中更改。",
+    "continue": "继续"
   }
 }

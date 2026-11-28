@@ -79,6 +79,8 @@ let peerLabel = "";
 let batteryState = null;
 let lastAddr = "";
 let computerName = "";
+// The first-start welcome was answered (kept so saving Settings doesn't undo it).
+let setupDone = true;
 
 function setConnected(on, peer) {
   connected = on;
@@ -427,6 +429,7 @@ function readSettingsForm() {
     theme: f.theme.value || "system",
     pc_name: f.pc_name.value.trim(),
     language: f.language.value || "system",
+    setup_done: setupDone,
   };
 }
 
@@ -441,6 +444,7 @@ function fillSettingsForm(s) {
   f.pc_name.value = s.pc_name || "";
   f.language.value = s.language || "system";
   computerName = s.computer_name || "";
+  setupDone = !!s.setup_done;
   f.pc_name.placeholder = computerName;
 }
 
@@ -463,6 +467,33 @@ function applyTheme(theme) {
   if (light) {
     light.media = theme === "classic" ? "all" : theme === "midnight" ? "not all" : "(prefers-color-scheme: light)";
   }
+}
+
+// ---- First start: choose the language ----------------------------------------------
+
+// Shown once (until answered). Picking a language switches the page at once;
+// Continue (or Esc) saves it.
+function showWelcome(settings) {
+  const dlg = $("welcome");
+  const form = dlg.querySelector("form");
+  const choice = () => form.elements.welcome_language.value || "system";
+  form.elements.welcome_language.value = settings.language || "system";
+  form.addEventListener("change", async () => {
+    await useLocale(resolveLang({ ...settings, language: choice() }));
+    refreshDynamic();
+  });
+  dlg.addEventListener("close", async () => {
+    try {
+      const fresh = (await invoke("get_settings")) || settings;
+      await invoke("set_settings", { settings: { ...fresh, language: choice(), setup_done: true } });
+      setupDone = true;
+      await applyLanguage((await invoke("get_settings")) || { ...fresh, language: choice() });
+    } catch (e) {
+      fail(e);
+    }
+  }, { once: true });
+  dlg.showModal();
+  dlg.querySelector("button").focus();
 }
 
 async function applyLanguage(s) {
@@ -533,6 +564,7 @@ let demoSettings = {
   theme: "system",
   pc_name: "",
   language: "system",
+  setup_done: false,
   computer_name: "my-computer",
 };
 function demo(cmd, args) {
@@ -584,6 +616,8 @@ function demo(cmd, args) {
     uiLog(`i18n: ${e}`);
   }
   refreshDynamic();
+  if (settings) setupDone = !!settings.setup_done;
+  if (settings && !settings.setup_done) showWelcome(settings);
   setupDrop();
   if (tauri?.event) {
     await tauri.event.listen("phone", (e) => onEvent(e.payload));

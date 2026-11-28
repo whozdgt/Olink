@@ -53,7 +53,7 @@ the backend resolved.
 | `pick_files_to_send` | `{ folders: bool }` | Open the file / folder picker and send what's picked |
 | `cancel_transfer` | `{ id }` | Stop a transfer to the phone |
 | `open_received_folder` | – | Open `~/Downloads/Olink` |
-| `get_settings` / `set_settings` | `{ settings }` | `cast_quality` (`smooth`/`balanced`/`sharp`), `scroll_mode` (`swipe`/`scroll`), `desktop_notifications`, `share_clipboard`, `start_on_login` (booleans), `theme` (`system`/`midnight`/`classic`), `language` (`system`/`en`/`zh-CN`), `pc_name` (text, ≤ 40 characters, no control characters; empty = the computer's name). `get_settings` also returns `computer_name` (the name field's placeholder) and `effective_language` (`en` or `zh-CN`, after resolving `system`) |
+| `get_settings` / `set_settings` | `{ settings }` | `cast_quality` (`smooth`/`balanced`/`sharp`), `scroll_mode` (`swipe`/`scroll`), `desktop_notifications`, `share_clipboard`, `start_on_login` (booleans), `theme` (`system`/`midnight`/`classic`), `language` (`system`/`en`/`zh-CN`), `pc_name` (text, ≤ 40 characters, no control characters; empty = the computer's name), `setup_done` (the first-start language welcome was answered; send it back unchanged). `get_settings` also returns `computer_name` (the name field's placeholder) and `effective_language` (`en` or `zh-CN`, after resolving `system`) |
 | `answer_pairing` | `{ id, allow }` | Answer "Allow this phone to connect?" |
 | `ui_log` | `{ msg }` | Write a line to the app's log |
 

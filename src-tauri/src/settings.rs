@@ -130,11 +130,13 @@ pub struct Settings {
     pub pc_name: PcName,
     /// Display language. Missing from an older `settings.json` means System.
     pub language: Language,
+    /// The first-start welcome (language choice) has been answered.
+    pub setup_done: bool,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { cast_quality: CastQuality::default(), scroll_mode: ScrollMode::default(), desktop_notifications: true, share_clipboard: true, start_on_login: true, theme: Theme::System, pc_name: PcName::default(), language: Language::System }
+        Self { cast_quality: CastQuality::default(), scroll_mode: ScrollMode::default(), desktop_notifications: true, share_clipboard: true, start_on_login: true, theme: Theme::System, pc_name: PcName::default(), language: Language::System, setup_done: false }
     }
 }
 
@@ -218,6 +220,14 @@ mod tests {
         assert!(serde_json::from_str::<Settings>(r#"{"pc_name":"evil\r\nDN: x"}"#).is_err());
         assert!(serde_json::from_str::<Settings>(&format!(r#"{{"pc_name":"{}"}}"#, "x".repeat(41))).is_err());
         assert_eq!(serde_json::from_str::<Settings>(r#"{"pc_name":""}"#).unwrap().pc_name, PcName::default());
+    }
+
+    #[test]
+    fn welcome_shows_until_answered() {
+        // A fresh install, and settings saved before the welcome existed.
+        assert!(!Settings::default().setup_done);
+        assert!(!serde_json::from_str::<Settings>(r#"{"theme":"midnight"}"#).unwrap().setup_done);
+        assert!(serde_json::from_str::<Settings>(r#"{"setup_done":true}"#).unwrap().setup_done);
     }
 
     #[test]
