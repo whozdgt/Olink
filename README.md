@@ -9,6 +9,7 @@
 
 <p align="center">
   <a href="https://github.com/whozdgt/Olink/actions/workflows/build.yml"><img src="https://github.com/whozdgt/Olink/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <img src="https://img.shields.io/badge/ColorOS-17%20compatible-1f8f4e" alt="ColorOS 17 compatible">
 </p>
 
 **Your OPPO, OnePlus or realme phone on Linux.** Olink speaks the phone's own
@@ -16,8 +17,8 @@ PC-connection protocol ("O+ Connect" / Device connect → PC in ColorOS), so the
 phone connects **directly to Linux** over Wi-Fi: no OPPO PC app, no cloud, no
 account.
 
-Built and tested with ColorOS 16 (OPPO Find X9 Ultra) on Arch / CachyOS with
-Hyprland.
+**ColorOS 17 compatible** (and still works on ColorOS 16). Built and tested on
+an OPPO Find X9 Ultra with Arch / CachyOS and Hyprland.
 
 - Pair by scanning a QR code, then allow the phone on the PC; afterwards the
   phone reconnects by itself.

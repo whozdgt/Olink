@@ -1,7 +1,7 @@
 [package]
 name = "olink"
 version = "0.1.1"
-description = "Olink: your OPPO, OnePlus or realme phone (ColorOS 16) on Linux"
+description = "Olink: your OPPO, OnePlus or realme phone (ColorOS 17) on Linux"
 authors = ["whozdgt"]
 edition = "2021"
 rust-version = "1.77"
