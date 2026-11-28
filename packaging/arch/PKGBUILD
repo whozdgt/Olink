@@ -6,7 +6,7 @@
 # Uninstall with: sudo pacman -R olink
 
 pkgname=olink
-pkgver=0.1.1
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="Your OPPO, OnePlus or realme phone on Linux: clipboard, files, notifications and the phone screen"
 arch=('x86_64')

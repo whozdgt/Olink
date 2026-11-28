@@ -1,6 +1,6 @@
 [package]
 name = "olink"
-version = "0.1.1"
+version = "0.1.2"
 description = "Olink: your OPPO, OnePlus or realme phone (ColorOS 17) on Linux"
 authors = ["whozdgt"]
 edition = "2021"
