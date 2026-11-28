@@ -813,6 +813,14 @@ fn build_window(sink: &gst::Element, id: u64, out: tokio::sync::mpsc::UnboundedS
     Ok(())
 }
 
+/// Work around a GStreamer `gtkglsink` + GTK3 Wayland/EGL bug: each `gtkglsink`
+/// creates a `GstGLDisplayWayland` wrapping GDK's shared `wl_display`, and
+/// finalizing it when a cast ends calls `eglTerminate()` on GDK's own shared
+/// `EGLDisplay` — causing every subsequent cast window's `GtkGLArea` to fail
+/// with "No available configurations for the given pixel format". Keeping the
+/// `gst.gl.GLDisplay` context alive prevents that premature `eglTerminate()`.
+static HELD_GL_DISPLAYS: Mutex<Vec<gst::Context>> = Mutex::new(Vec::new());
+
 /// webrtcbin src pad → decodebin → video window / audio output.
 fn link_decoder(pipeline: &gst::Pipeline, pad: &gst::Pad, channel: SharedChannel, id: u64, out: tokio::sync::mpsc::UnboundedSender<Value>) -> anyhow::Result<()> {
     if pad.current_caps().or_else(|| Some(pad.query_caps(None))).is_some_and(|c| c.structure(0).is_some_and(|s| s.get::<&str>("media").ok() == Some("video"))) {
@@ -857,9 +865,13 @@ fn link_decoder(pipeline: &gst::Pipeline, pad: &gst::Pad, channel: SharedChannel
                         own_window(sink, id, out.clone());
                     }
                 }
-                let ok = pipeline.add(&bin).is_ok()
-                    && bin.sync_state_with_parent().is_ok()
-                    && bin.static_pad("sink").is_some_and(|p| dpad.link(&p).is_ok());
+                let synced = pipeline.add(&bin).is_ok() && bin.sync_state_with_parent().is_ok();
+                if synced && *GTK_SINK == Some("gtkglsink") && name.starts_with("video/") {
+                    if let Some(ctx) = bin.by_name("vsink").and_then(|s| s.context("gst.gl.GLDisplay")) {
+                        HELD_GL_DISPLAYS.lock().unwrap_or_else(|p| p.into_inner()).push(ctx);
+                    }
+                }
+                let ok = synced && bin.static_pad("sink").is_some_and(|p| dpad.link(&p).is_ok());
                 if ok && name.starts_with("video/") {
                     let s = caps.structure(0);
                     let w = s.and_then(|s| s.get::<i32>("width").ok()).unwrap_or(1080) as u16;
